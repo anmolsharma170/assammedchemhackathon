@@ -6,25 +6,25 @@ import { useRouter } from 'next/navigation';
 export default function AdminDashboard() {
   const router = useRouter();
   const [currentUser, setCurrentUser] = useState(null);
-  
+
   // Products state
   const [products, setProducts] = useState([]);
   const [productSearch, setProductSearch] = useState('');
   const [productCategory, setProductCategory] = useState('All');
   const [categories, setCategories] = useState([]);
-  
+
   // Orders state
   const [orders, setOrders] = useState([]);
-  
+
   // UI States
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(true);
-  
+
   // Modal states
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
-  
+
   // Form State
   const [formData, setFormData] = useState({
     name: '',
@@ -66,7 +66,7 @@ export default function AdminDashboard() {
       if (res.ok) {
         const data = await res.json();
         setProducts(data.products || []);
-        
+
         // Extract categories
         const cats = ['All', ...new Set((data.products || []).map(p => p.category))];
         setCategories(cats);
@@ -224,8 +224,8 @@ export default function AdminDashboard() {
   };
 
   const filteredProducts = products.filter(p => {
-    const matchesSearch = p.name.toLowerCase().includes(productSearch.toLowerCase()) || 
-                          p.sku.toLowerCase().includes(productSearch.toLowerCase());
+    const matchesSearch = p.name.toLowerCase().includes(productSearch.toLowerCase()) ||
+      p.sku.toLowerCase().includes(productSearch.toLowerCase());
     const matchesCategory = productCategory === 'All' || p.category === productCategory;
     return matchesSearch && matchesCategory;
   });
@@ -244,7 +244,7 @@ export default function AdminDashboard() {
       <header className="app-header">
         <div className="logo">
           <div className="logo-icon">🧪</div>
-          AasaMedChem <span style={{ fontSize: '0.9rem', color: 'var(--accent-teal)', marginLeft: '0.25rem' }}>Admin Control</span>
+          AasamMedChem <span style={{ fontSize: '0.9rem', color: 'var(--accent-teal)', marginLeft: '0.25rem' }}>Admin Control</span>
         </div>
         <div className="user-badge">
           {currentUser && (
@@ -263,7 +263,7 @@ export default function AdminDashboard() {
       <main className="app-container">
         {/* Admin Workspace Guide */}
         <div style={{ padding: '1rem', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '8px', marginBottom: '1.5rem', color: '#1e3a8a', fontSize: '0.9rem', lineHeight: '1.5' }}>
-          💡 <strong>Administrator Workspace</strong>: Manage the chemical and equipment catalog (create products, update base prices, adjust inventory) and process incoming quotations. 
+          💡 <strong>Administrator Workspace</strong>: Manage the chemical and equipment catalog (create products, update base prices, adjust inventory) and process incoming quotations.
           <span style={{ display: 'block', marginTop: '0.25rem', fontWeight: '600' }}>
             * Operational Note: Rejecting a quotation automatically returns the reserved quantities back into active catalog stock.
           </span>
@@ -284,7 +284,7 @@ export default function AdminDashboard() {
 
         {/* Dashboard Grid */}
         <div className="grid-sidebar">
-          
+
           {/* Left Column: Product Management */}
           <div className="glass-panel" style={{ minWidth: '0' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
@@ -413,7 +413,7 @@ export default function AdminDashboard() {
                               <span style={{ fontWeight: '600' }}>{item.productName}</span>
                               <span className="data-num currency-inr">{item.itemTotalPrice.toFixed(2)}</span>
                             </div>
-                            
+
                             {/* Detailed unit audit display */}
                             <div className="conversion-audit-box">
                               <h5>Conversion & Calculation Audit</h5>
@@ -422,7 +422,7 @@ export default function AdminDashboard() {
                               </p>
                               {needsConversion ? (
                                 <p>
-                                  Converted: <code>{item.convertedQuantity.toFixed(4)} {item.baseUnit}</code> 
+                                  Converted: <code>{item.convertedQuantity.toFixed(4)} {item.baseUnit}</code>
                                   <span style={{ color: 'var(--accent-teal)' }}> (Unit conversion active)</span>
                                 </p>
                               ) : (
@@ -459,11 +459,11 @@ export default function AdminDashboard() {
                           </button>
                         </div>
                       )}
-                      
+
                       {order.status !== 'pending' && (
-                        <button 
-                          onClick={() => handleUpdateOrderStatus(order.id, 'pending')} 
-                          className="btn btn-secondary" 
+                        <button
+                          onClick={() => handleUpdateOrderStatus(order.id, 'pending')}
+                          className="btn btn-secondary"
                           style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }}
                         >
                           Revert to Pending
@@ -540,7 +540,7 @@ export default function AdminDashboard() {
                     required
                   />
                 </div>
-                
+
                 <div className="form-group">
                   <label className="form-label" htmlFor="dimension">Dimension</label>
                   <select
