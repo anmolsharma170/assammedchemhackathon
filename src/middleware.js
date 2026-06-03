@@ -11,38 +11,47 @@ export async function middleware(request) {
   // Verify session
   const user = await verifySession(sessionToken);
 
+  // Helper to redirect based on user role
+  const redirectToDashboard = (role) => {
+    if (role === 'admin') return new URL('/admin', request.url);
+    if (role === 'seller') return new URL('/seller', request.url);
+    return new URL('/user', request.url); // Default 'user' role
+  };
+
   // Admin routes access control
   if (pathname.startsWith('/admin')) {
     if (!user) {
-      const loginUrl = new URL('/login', request.url);
-      return NextResponse.redirect(loginUrl);
+      return NextResponse.redirect(new URL('/login', request.url));
     }
     if (user.role !== 'admin') {
-      const sellerUrl = new URL('/seller', request.url);
-      return NextResponse.redirect(sellerUrl);
+      return NextResponse.redirect(redirectToDashboard(user.role));
     }
   }
 
   // Seller routes access control
   if (pathname.startsWith('/seller')) {
     if (!user) {
-      const loginUrl = new URL('/login', request.url);
-      return NextResponse.redirect(loginUrl);
+      return NextResponse.redirect(new URL('/login', request.url));
     }
     if (user.role !== 'seller') {
-      const adminUrl = new URL('/admin', request.url);
-      return NextResponse.redirect(adminUrl);
+      return NextResponse.redirect(redirectToDashboard(user.role));
+    }
+  }
+
+  // User (Customer) routes access control
+  if (pathname.startsWith('/user')) {
+    if (!user) {
+      return NextResponse.redirect(new URL('/login', request.url));
+    }
+    if (user.role !== 'user') {
+      return NextResponse.redirect(redirectToDashboard(user.role));
     }
   }
 
   // Redirect authenticated users trying to access login page
   if (pathname === '/login') {
     if (user) {
-      if (user.role === 'admin') {
-        return NextResponse.redirect(new URL('/admin', request.url));
-      } else if (user.role === 'seller') {
-        return NextResponse.redirect(new URL('/seller', request.url));
-      }
+      return NextResponse.redirect(redirectToDashboard(user.role));
     }
   }
 
@@ -54,6 +63,7 @@ export const config = {
   matcher: [
     '/admin/:path*',
     '/seller/:path*',
+    '/user/:path*',
     '/login'
   ]
 };

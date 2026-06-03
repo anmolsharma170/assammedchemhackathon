@@ -103,8 +103,8 @@ export async function POST(request) {
   const sessionToken = sessionCookie?.value;
   const user = await verifySession(sessionToken);
 
-  if (!user || user.role !== 'seller') {
-    return NextResponse.json({ error: "Unauthorized: Sellers only" }, { status: 403 });
+  if (!user || !['seller', 'user'].includes(user.role)) {
+    return NextResponse.json({ error: "Unauthorized: Sellers or Customers only" }, { status: 403 });
   }
 
   try {

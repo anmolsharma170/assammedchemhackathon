@@ -33,8 +33,10 @@ export default function LoginPage() {
       // Redirect based on role
       if (data.user.role === 'admin') {
         router.push('/admin');
-      } else {
+      } else if (data.user.role === 'seller') {
         router.push('/seller');
+      } else {
+        router.push('/user');
       }
       router.refresh();
     } catch (err) {
@@ -117,6 +119,10 @@ export default function LoginPage() {
             <div>
               <span className="role-pill seller" style={{ fontSize: '0.65rem', padding: '0.1rem 0.4rem', marginRight: '0.5rem' }}>Seller</span>
               <span>User: <code>seller</code> / Pass: <code>sellerpassword</code></span>
+            </div>
+            <div>
+              <span className="role-pill user" style={{ fontSize: '0.65rem', padding: '0.1rem 0.4rem', marginRight: '0.5rem', background: '#f3f4f6', color: 'var(--text-secondary)', border: '1px solid var(--border-muted)' }}>Customer</span>
+              <span>User: <code>customer</code> / Pass: <code>customerpassword</code></span>
             </div>
           </div>
         </div>

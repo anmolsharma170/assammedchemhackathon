@@ -32,7 +32,7 @@ async function setup() {
         id SERIAL PRIMARY KEY,
         username VARCHAR(50) UNIQUE NOT NULL,
         password_hash VARCHAR(255) NOT NULL,
-        role VARCHAR(20) NOT NULL CHECK (role IN ('admin', 'seller')),
+        role VARCHAR(20) NOT NULL CHECK (role IN ('admin', 'seller', 'user')),
         name VARCHAR(100) NOT NULL
       );
     `;
@@ -89,11 +89,13 @@ async function setup() {
     console.log("Seeding users...");
     const adminPasswordHash = await bcrypt.hash('adminpassword', 10);
     const sellerPasswordHash = await bcrypt.hash('sellerpassword', 10);
+    const customerPasswordHash = await bcrypt.hash('customerpassword', 10);
 
     await sql`
       INSERT INTO users (username, password_hash, role, name) VALUES
       ('admin', ${adminPasswordHash}, 'admin', 'System Administrator'),
-      ('seller', ${sellerPasswordHash}, 'seller', 'Lead Lab Seller');
+      ('seller', ${sellerPasswordHash}, 'seller', 'Lead Lab Seller'),
+      ('customer', ${customerPasswordHash}, 'user', 'Standard Lab Customer');
     `;
 
     // 7. Seed Products
