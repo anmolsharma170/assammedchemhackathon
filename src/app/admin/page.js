@@ -341,20 +341,20 @@ export default function AdminDashboard() {
                       const isLowStock = parseFloat(p.inventory) < 10;
                       return (
                         <tr key={p.id}>
-                          <td className="data-num" style={{ color: 'var(--accent-teal)' }}>{p.sku}</td>
+                          <td className="data-num nowrap" style={{ color: 'var(--accent-teal)' }}>{p.sku}</td>
                           <td>
                             <div style={{ fontWeight: '600' }}>{p.name}</div>
                             {p.description && <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{p.description}</div>}
                           </td>
-                          <td>{p.category}</td>
-                          <td style={{ textTransform: 'capitalize' }}>{p.dimension}</td>
-                          <td className="data-num currency-inr">
+                          <td className="nowrap">{p.category}</td>
+                          <td className="nowrap" style={{ textTransform: 'capitalize' }}>{p.dimension}</td>
+                          <td className="data-num currency-inr nowrap">
                             {parseFloat(p.base_price).toFixed(2)} <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>/{p.base_unit}</span>
                           </td>
-                          <td className={`data-num ${isLowStock ? 'low-inventory' : ''}`}>
+                          <td className={`data-num nowrap ${isLowStock ? 'low-inventory' : ''}`}>
                             {parseFloat(p.inventory).toFixed(2)} {p.base_unit}
                           </td>
-                          <td style={{ textAlign: 'right' }}>
+                          <td className="nowrap" style={{ textAlign: 'right' }}>
                             <div style={{ display: 'inline-flex', gap: '0.5rem' }}>
                               <button onClick={() => openEditModal(p)} className="btn btn-secondary" style={{ padding: '0.35rem 0.65rem', fontSize: '0.8rem' }}>
                                 Edit
@@ -391,7 +391,7 @@ export default function AdminDashboard() {
                     {/* Order header */}
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem', flexWrap: 'wrap', gap: '0.5rem' }}>
                       <div>
-                        <span style={{ fontWeight: '700', color: '#ffffff' }}>Order #{order.id}</span>
+                        <span style={{ fontWeight: '700', color: 'var(--text-primary)' }}>Order #{order.id}</span>
                         <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginLeft: '0.5rem' }}>
                           by {order.sellerName}
                         </span>
@@ -431,7 +431,7 @@ export default function AdminDashboard() {
                               <p>
                                 Base Rate: <code>₹{item.pricePerBaseUnit.toFixed(2)} per {item.baseUnit}</code>
                               </p>
-                              <p style={{ marginTop: '0.2rem', fontSize: '0.8rem', color: '#ffffff' }}>
+                              <p style={{ marginTop: '0.2rem', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
                                 Calculation: <code>{item.convertedQuantity.toFixed(4)} {item.baseUnit} × ₹{item.pricePerBaseUnit.toFixed(2)} = ₹{item.itemTotalPrice.toFixed(2)}</code>
                               </p>
                             </div>

@@ -356,19 +356,19 @@ export default function SellerDashboard() {
                       const isOutOfStock = parseFloat(p.inventory) <= 0;
                       return (
                         <tr key={p.id}>
-                          <td className="data-num" style={{ color: 'var(--accent-indigo)' }}>{p.sku}</td>
+                          <td className="data-num nowrap" style={{ color: 'var(--accent-indigo)' }}>{p.sku}</td>
                           <td>
                             <div style={{ fontWeight: '600' }}>{p.name}</div>
                             {p.description && <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{p.description}</div>}
                           </td>
-                          <td>{p.category}</td>
-                          <td className="data-num currency-inr">
+                          <td className="nowrap">{p.category}</td>
+                          <td className="data-num currency-inr nowrap">
                             {parseFloat(p.base_price).toFixed(2)} <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>/{p.base_unit}</span>
                           </td>
-                          <td className="data-num" style={{ color: isOutOfStock ? 'var(--color-danger)' : 'var(--text-primary)' }}>
+                          <td className="data-num nowrap" style={{ color: isOutOfStock ? 'var(--color-danger)' : 'var(--text-primary)' }}>
                             {isOutOfStock ? 'Out of Stock' : `${parseFloat(p.inventory).toFixed(2)} ${p.base_unit}`}
                           </td>
-                          <td style={{ textAlign: 'right' }}>
+                          <td className="nowrap" style={{ textAlign: 'right' }}>
                             <button
                               onClick={() => selectProductForCalc(p)}
                               className="btn btn-secondary"
@@ -395,7 +395,7 @@ export default function SellerDashboard() {
               <div className="glass-panel glow-accent" style={{ borderLeft: '4px solid var(--accent-teal)' }}>
                 <h3>Quotation Calculator</h3>
                 <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
-                  Product: <strong style={{ color: '#ffffff' }}>{selectedProduct.name}</strong> ({selectedProduct.sku})<br />
+                  Product: <strong style={{ color: 'var(--text-primary)' }}>{selectedProduct.name}</strong> ({selectedProduct.sku})<br />
                   Internal Base Unit: <code>{selectedProduct.base_unit}</code> | Price: <span className="currency-inr">{parseFloat(selectedProduct.base_price).toFixed(2)}</span>
                 </p>
 
@@ -441,7 +441,7 @@ export default function SellerDashboard() {
                       <p>No conversion required (matches base storage unit).</p>
                     )}
                     
-                    <p style={{ marginTop: '0.2rem', color: '#ffffff', fontWeight: '500' }}>
+                    <p style={{ marginTop: '0.2rem', color: 'var(--text-primary)', fontWeight: '500' }}>
                       Estimated Quote: <code>{calcConvertedQty.toFixed(4)} × ₹{parseFloat(selectedProduct.base_price).toFixed(2)} = </code>
                       <span className="currency-inr" style={{ color: 'var(--accent-teal)', fontSize: '0.95rem', fontWeight: '700' }}>{calcTotalPrice.toFixed(2)}</span>
                     </p>
@@ -497,7 +497,7 @@ export default function SellerDashboard() {
 
                   <div className="cart-total">
                     <span style={{ fontWeight: '600', color: 'var(--text-secondary)' }}>Estimated Total</span>
-                    <span className="data-num currency-inr" style={{ fontSize: '1.35rem', fontWeight: '800', color: '#ffffff' }}>
+                    <span className="data-num currency-inr" style={{ fontSize: '1.35rem', fontWeight: '800', color: 'var(--text-primary)' }}>
                       {cartTotal.toFixed(2)}
                     </span>
                   </div>

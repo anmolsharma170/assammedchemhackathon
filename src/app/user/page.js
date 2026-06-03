@@ -356,20 +356,20 @@ export default function CustomerDashboard() {
                       const isOutOfStock = parseFloat(p.inventory) <= 0;
                       return (
                         <tr key={p.id}>
-                          <td className="data-num" style={{ color: 'var(--accent-primary)' }}>{p.sku}</td>
+                          <td className="data-num nowrap" style={{ color: 'var(--accent-primary)' }}>{p.sku}</td>
                           <td>
                             <div style={{ fontWeight: '600' }}>{p.name}</div>
                             {p.description && <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{p.description}</div>}
                           </td>
-                          <td>{p.category}</td>
-                          <td className="data-num currency-inr">
+                          <td className="nowrap">{p.category}</td>
+                          <td className="data-num currency-inr nowrap">
                             {parseFloat(p.base_price).toFixed(2)} <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>/{p.base_unit}</span>
                           </td>
                           {/* Hide raw stock number from external customers, only show flat status */}
-                          <td style={{ fontWeight: '500', color: isOutOfStock ? 'var(--color-danger)' : 'var(--color-success)' }}>
+                          <td className="nowrap" style={{ fontWeight: '500', color: isOutOfStock ? 'var(--color-danger)' : 'var(--color-success)' }}>
                             {isOutOfStock ? 'Out of Stock' : 'In Stock'}
                           </td>
-                          <td style={{ textAlign: 'right' }}>
+                          <td className="nowrap" style={{ textAlign: 'right' }}>
                             <button
                               onClick={() => selectProductForCalc(p)}
                               className="btn btn-secondary"
