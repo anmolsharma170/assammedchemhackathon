@@ -387,18 +387,25 @@ export default function AdminDashboard() {
                 </div>
               ) : (
                 orders.map(order => (
-                  <div key={order.id} className="glass-panel glow-accent" style={{ padding: '1.25rem', borderLeft: '4px solid var(--accent-indigo)' }}>
+                  <div key={order.id} className="glass-panel glow-accent" style={{ padding: '1.25rem', borderLeft: `4px solid ${order.orderType === 'sale' ? 'var(--accent-teal)' : 'var(--accent-indigo)'}` }}>
                     {/* Order header */}
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem', flexWrap: 'wrap', gap: '0.5rem' }}>
                       <div>
                         <span style={{ fontWeight: '700', color: 'var(--text-primary)' }}>Order #{order.id}</span>
-                        <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginLeft: '0.5rem' }}>
-                          by {order.sellerName}
+                        <span style={{ fontSize: '0.75rem', marginLeft: '0.5rem', padding: '0.15rem 0.5rem', borderRadius: '4px', background: order.orderType === 'sale' ? '#d1fae5' : '#e0e7ff', color: order.orderType === 'sale' ? '#065f46' : '#3730a3', fontWeight: '600' }}>
+                          {order.orderType === 'sale' ? '🛒 Sale' : '📦 Procurement'}
                         </span>
                       </div>
                       <span className={`badge badge-${order.status}`}>{order.status}</span>
                     </div>
 
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>
+                      {order.orderType === 'sale' ? (
+                        <><strong>Customer:</strong> {order.sellerName} → <strong>Seller:</strong> {order.vendorName || '—'}</>
+                      ) : (
+                        <><strong>Seller:</strong> {order.sellerName} → <strong>Vendor:</strong> Admin</>  
+                      )}
+                    </div>
                     <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.75rem' }}>
                       Submitted: {new Date(order.createdAt).toLocaleString()}
                     </div>
@@ -449,7 +456,8 @@ export default function AdminDashboard() {
                         </div>
                       </div>
 
-                      {order.status === 'pending' && (
+                      {/* Only procurement orders need admin Approve/Reject */}
+                      {order.orderType !== 'sale' && order.status === 'pending' && (
                         <div style={{ display: 'flex', gap: '0.5rem' }}>
                           <button onClick={() => handleUpdateOrderStatus(order.id, 'approved')} className="btn btn-primary" style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }}>
                             Approve
@@ -460,7 +468,7 @@ export default function AdminDashboard() {
                         </div>
                       )}
 
-                      {order.status !== 'pending' && (
+                      {order.orderType !== 'sale' && order.status !== 'pending' && (
                         <button
                           onClick={() => handleUpdateOrderStatus(order.id, 'pending')}
                           className="btn btn-secondary"
@@ -468,6 +476,12 @@ export default function AdminDashboard() {
                         >
                           Revert to Pending
                         </button>
+                      )}
+
+                      {order.orderType === 'sale' && (
+                        <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontStyle: 'italic' }}>
+                          Direct sale — auto-fulfilled
+                        </span>
                       )}
                     </div>
                   </div>

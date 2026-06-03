@@ -27,6 +27,7 @@ export class OrderController {
 
   /**
    * Translates quotation request placement POST requests.
+   * Supports both 'procurement' (seller←admin) and 'sale' (customer←seller).
    */
   static async placeOrder(request) {
     const sessionCookie = request.cookies.get('session');
@@ -47,13 +48,25 @@ export class OrderController {
         return NextResponse.json({ error: validationErr.message }, { status: 400 });
       }
 
-      // Delegate creation to service
-      const result = await OrderService.placeOrder(user.userId, user.username, orderData.items);
+      const orderType = orderData.orderType || 'procurement';
+      const vendorId  = orderData.vendorId  || null;
 
-      return NextResponse.json({ 
-        success: true, 
-        orderId: result.orderId, 
-        totalPrice: result.totalPrice 
+      // Only customers can place sale orders; only sellers can place procurement orders
+      if (orderType === 'sale' && user.role !== 'user') {
+        return NextResponse.json({ error: 'Only customers can place sale orders' }, { status: 403 });
+      }
+      if (orderType === 'procurement' && user.role !== 'seller') {
+        return NextResponse.json({ error: 'Only sellers can place procurement orders' }, { status: 403 });
+      }
+
+      const result = await OrderService.placeOrder(
+        user.userId, user.username, orderData.items, orderType, vendorId
+      );
+
+      return NextResponse.json({
+        success:    true,
+        orderId:    result.orderId,
+        totalPrice: result.totalPrice
       }, { status: 201 });
     } catch (error) {
       console.error("POST order placement error:", error);

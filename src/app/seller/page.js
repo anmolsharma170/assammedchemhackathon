@@ -42,8 +42,11 @@ import { convertQuantity, CONVERSIONS } from '@/lib/conversions';
 export default function SellerDashboard() {
   const router = useRouter();
   const [currentUser, setCurrentUser] = useState(null);
-  
-  // Products Catalog State
+
+  // My Stock — seller's own inventory (credited when admin approves procurement)
+  const [myStock, setMyStock] = useState([]);
+
+  // Products Catalog State (admin master catalog — seller buys from here)
   const [products, setProducts] = useState([]);
   const [productSearch, setProductSearch] = useState('');
   const [productCategory, setProductCategory] = useState('All');
@@ -83,10 +86,24 @@ export default function SellerDashboard() {
       setCurrentUser(data.user);
       fetchProducts();
       fetchOrders();
+      fetchMyStock();
     } catch (err) {
       console.error(err);
       setError('Failed to fetch session');
       setLoading(false);
+    }
+  };
+
+  // Fetch the seller's own stocked inventory (credited by admin approvals)
+  const fetchMyStock = async () => {
+    try {
+      const res = await fetch('/api/seller-inventory');
+      if (res.ok) {
+        const data = await res.json();
+        setMyStock(data.listings || []);
+      }
+    } catch (err) {
+      console.error(err);
     }
   };
 
@@ -314,7 +331,7 @@ export default function SellerDashboard() {
     setCart(cart.filter(item => item.productId !== productId));
   };
 
-  // Submit cart as new quotation/order
+  // Submit cart as a PROCUREMENT order (seller buys from admin inventory)
   const handleSubmitQuotation = async () => {
     setError('');
     setSuccess('');
@@ -329,6 +346,7 @@ export default function SellerDashboard() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          orderType: 'procurement',  // seller buying from admin
           items: cart.map(item => ({
             productId: item.productId,
             orderedQuantity: item.orderedQuantity,
@@ -342,10 +360,11 @@ export default function SellerDashboard() {
         throw new Error(data.error || 'Failed to submit quotation');
       }
 
-      setSuccess('Quotation submitted successfully!');
-      setCart([]); // Clear cart
-      fetchProducts(); // Refresh products inventory
-      fetchOrders(); // Refresh orders history
+      setSuccess('Procurement quotation submitted! Awaiting admin approval to credit your stock.');
+      setCart([]);
+      fetchProducts();
+      fetchOrders();
+      fetchMyStock(); // refresh seller's stock panel
     } catch (err) {
       setError(err.message);
     }
@@ -625,10 +644,55 @@ export default function SellerDashboard() {
           </div>
         </div>
 
+        {/* ── My Stocked Inventory Panel ─────────────────────────────────── */}
+        {/* Quantities here are credited when admin APPROVES a procurement order */}
+        <div className="glass-panel" style={{ marginTop: '2rem', borderLeft: '4px solid var(--accent-teal)' }}>
+          <h2>My Stocked Inventory</h2>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: '1.25rem' }}>
+            Products credited to your stock after admin approves your procurement orders. Customers buy from this inventory.
+          </p>
+
+          {myStock.length === 0 ? (
+            <div style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '2rem' }}>
+              No stock yet. Submit a procurement order and wait for admin approval.
+            </div>
+          ) : (
+            <div className="table-container">
+              <table className="custom-table">
+                <thead>
+                  <tr>
+                    <th>SKU</th>
+                    <th>Product</th>
+                    <th>Category</th>
+                    <th>Your Stock</th>
+                    <th>Selling Price</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {myStock.map(row => (
+                    <tr key={row.id}>
+                      <td className="data-num nowrap" style={{ color: 'var(--accent-teal)' }}>{row.sku}</td>
+                      <td style={{ fontWeight: '600' }}>{row.product_name}</td>
+                      <td>{row.category}</td>
+                      <td className="data-num nowrap">
+                        {parseFloat(row.quantity).toFixed(4)} {row.base_unit}
+                      </td>
+                      <td className="data-num currency-inr nowrap">
+                        {parseFloat(row.selling_price).toFixed(2)}
+                        <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}> /{row.base_unit}</span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+
         {/* Order History Section */}
         <div className="glass-panel" style={{ marginTop: '2rem' }}>
-          <h2>My Submitted Quotations</h2>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: '1.25rem' }}>Track the status of your quotations and orders.</p>
+          <h2>My Procurement Orders</h2>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: '1.25rem' }}>Track the status of your procurement quotations from admin.</p>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))', gap: '1.25rem' }}>
             {orders.length === 0 ? (
