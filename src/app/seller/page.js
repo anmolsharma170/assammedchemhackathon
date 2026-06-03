@@ -1,7 +1,42 @@
 'use client';
 
+/**
+ * ─────────────────────────────────────────────────────────────────────────────
+ * FILE: src/app/seller/page.js
+ * LAYER: UI  (Client-side React component)
+ *
+ * UNIT CONVERSION — CLIENT-SIDE (LIVE PREVIEW)
+ * ─────────────────────────────────────────────────────────────────────────────
+ * This page imports the SAME convertQuantity() + CONVERSIONS table that the
+ * server uses (src/lib/conversions.js).  This means:
+ *   • The live price preview shown to the seller is always identical to what
+ *     the server will compute when the order is actually submitted.
+ *   • No round-trip to the API is needed just to preview a price.
+ *
+ * HOW CONVERSION FLOWS IN THE UI
+ * ─────────────────────────────────────────────────────────────────────────────
+ * 1. Seller clicks "Add to Quote" on a product.
+ *    → selectProductForCalc() sets selectedProduct and defaults unit to base_unit.
+ *
+ * 2. Seller types a quantity or changes the unit dropdown.
+ *    → handleCalcQtyChange / handleCalcUnitChange both call runLiveConversion().
+ *    → runLiveConversion() calls convertQuantity(qty, chosenUnit, base_unit, dimension)
+ *       and immediately updates the "Live Conversion Preview" panel.
+ *
+ * 3. Seller clicks "Add to Cart".
+ *    → handleAddToCart() re-runs the conversion (in case state is stale),
+ *      checks local inventory, then stores BOTH the original (ordered) values
+ *      AND the converted (base-unit) values in the cart item.
+ *
+ * 4. Seller clicks "Submit Quotation".
+ *    → Only the original ordered qty + unit are sent to the API.
+ *    → The server re-converts and re-validates everything independently.
+ * ─────────────────────────────────────────────────────────────────────────────
+ */
+
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+// CONVERSIONS is also used here to build the unit dropdown from the product's dimension.
 import { convertQuantity, CONVERSIONS } from '@/lib/conversions';
 
 export default function SellerDashboard() {
@@ -100,50 +135,103 @@ export default function SellerDashboard() {
     }
   };
 
-  // Triggered when a user selects a product to calculate
+  /**
+   * selectProductForCalc
+   * Called when a seller clicks "Add to Quote" on a catalog row.
+   * Initialises the calculator with:
+   *   – qty  = 1  (sensible default)
+   *   – unit = product.base_unit  (no conversion needed at start)
+   * Then immediately runs the conversion so the price preview is visible
+   * before the seller even types anything.
+   */
   const selectProductForCalc = (product) => {
     setSelectedProduct(product);
     setCalcQty('1');
-    setCalcUnit(product.base_unit);
+    setCalcUnit(product.base_unit); // Start in the base unit (no conversion needed)
     runLiveConversion('1', product.base_unit, product);
   };
 
-  // Run live conversion as user types or changes unit
+  // ── Triggered every time the quantity input changes ────────────────────────
   const handleCalcQtyChange = (e) => {
     const value = e.target.value;
     setCalcQty(value);
-    runLiveConversion(value, calcUnit, selectedProduct);
+    runLiveConversion(value, calcUnit, selectedProduct); // recalculate on every keystroke
   };
 
+  // ── Triggered every time the unit dropdown changes ────────────────────────
   const handleCalcUnitChange = (e) => {
     const unit = e.target.value;
     setCalcUnit(unit);
-    runLiveConversion(calcQty, unit, selectedProduct);
+    runLiveConversion(calcQty, unit, selectedProduct); // recalculate for new unit
   };
 
+  /**
+   * runLiveConversion  ← CORE CLIENT-SIDE CONVERSION FUNCTION
+   * ───────────────────────────────────────────────────────────────────────────
+   * Computes and displays the real-time price estimate as the seller types.
+   *
+   * How it works:
+   *   1. Parse the quantity string to a float.  Reject invalid/negative values.
+   *   2. Call convertQuantity(qty, chosenUnit, base_unit, dimension)
+   *      from src/lib/conversions.js – the same function the server uses.
+   *      Example: 2 kg → 2000 g  (factor = 1000)
+   *   3. Multiply converted quantity by base_price (₹ per base unit).
+   *      Example: 2000 g × ₹0.05/g = ₹100
+   *   4. Update React state → triggers re-render of "Live Conversion Preview".
+   *
+   * Edge cases:
+   *   • qty = 0 or NaN  → reset display to 0 (no throw)
+   *   • Invalid unit combo → convertQuantity throws; we catch and reset to 0
+   *     so the UI never shows a broken price.
+   */
   const runLiveConversion = (qtyStr, unit, product) => {
     if (!product) return;
-    
+
     const qty = parseFloat(qtyStr);
     if (isNaN(qty) || qty <= 0) {
+      // Invalid input – clear the preview rather than show NaN
       setCalcConvertedQty(0);
       setCalcTotalPrice(0);
       return;
     }
 
     try {
+      // ── UNIT CONVERSION (client-side, same logic as server) ──────────────
+      // convertQuantity uses CONVERSIONS[dimension][unit][product.base_unit]
+      // Example: unit='kg', base_unit='g'  → factor=1000  → 2kg → 2000g
       const converted = convertQuantity(qty, unit, product.base_unit, product.dimension);
+
+      // ── PRICE CALCULATION ────────────────────────────────────────────────
+      // base_price is always ₹ per base unit (e.g. ₹0.05 per gram)
+      // Total price = converted quantity (in base unit) × base_price
       const total = converted * parseFloat(product.base_price);
-      setCalcConvertedQty(converted);
-      setCalcTotalPrice(total);
+
+      setCalcConvertedQty(converted); // shown in the Live Conversion Preview
+      setCalcTotalPrice(total);        // shown as Estimated Quote (₹)
     } catch (err) {
+      // Conversion not possible for this unit combo – silently reset display
       console.error(err);
       setCalcConvertedQty(0);
       setCalcTotalPrice(0);
     }
   };
 
-  // Add calculated item to quotation cart
+  /**
+   * handleAddToCart
+   * ───────────────────────────────────────────────────────────────────────────
+   * Validates the current calculator state and adds the item to the local
+   * quotation cart.  The cart stores BOTH:
+   *   • orderedQuantity + orderedUnit  → what the seller sees / typed
+   *   • convertedQuantity + baseUnit   → base-unit equivalent for price/stock
+   *
+   * LOCAL INVENTORY CHECK (pre-flight before API call)
+   * ───────────────────────────────────────────────────────────────────────────
+   * We compare against product.inventory (base units from DB) to give instant
+   * feedback without a server round-trip.  The server will re-validate anyway.
+   *
+   * The check is cumulative: if the same product is already in the cart, we
+   * add the existing converted quantity to the new one before comparing.
+   */
   const handleAddToCart = (e) => {
     e.preventDefault();
     if (!selectedProduct) return;
@@ -154,48 +242,70 @@ export default function SellerDashboard() {
       return;
     }
 
-    // Verify inventory availability locally
-    const existingInCart = cart.find(item => item.productId === selectedProduct.id);
+    // ── LOCAL INVENTORY CHECK ────────────────────────────────────────────────
+    // All comparisons happen in base units so they match the DB column.
+    const existingInCart = cart.find((item) => item.productId === selectedProduct.id);
     const existingConvertedQty = existingInCart ? existingInCart.convertedQuantity : 0;
+    // calcConvertedQty was set by runLiveConversion(); it is already in base units.
     const totalRequestedConverted = calcConvertedQty + existingConvertedQty;
 
     if (totalRequestedConverted > parseFloat(selectedProduct.inventory)) {
-      setError(`Cannot add to cart: Total requested quantity exceeds available stock (${selectedProduct.inventory} ${selectedProduct.base_unit})`);
+      setError(
+        `Cannot add to cart: Total requested quantity exceeds available stock ` +
+        `(${selectedProduct.inventory} ${selectedProduct.base_unit})`
+      );
       return;
     }
 
     if (existingInCart) {
-      // Update existing item
-      setCart(cart.map(item => {
-        if (item.productId === selectedProduct.id) {
-          const newQty = item.orderedQuantity + qty;
-          const newConverted = convertQuantity(newQty, item.orderedUnit, selectedProduct.base_unit, selectedProduct.dimension);
-          return {
-            ...item,
-            orderedQuantity: newQty,
-            convertedQuantity: newConverted,
-            itemTotalPrice: newConverted * parseFloat(selectedProduct.base_price)
-          };
-        }
-        return item;
-      }));
+      // ── UPDATE EXISTING CART ITEM ──────────────────────────────────────────
+      // Merge the quantities: add new qty to existing orderedQuantity, then
+      // re-run conversion on the cumulative total (more accurate than summing
+      // convertedQuantities separately due to float precision).
+      setCart(
+        cart.map((item) => {
+          if (item.productId === selectedProduct.id) {
+            const newQty = item.orderedQuantity + qty;
+            // Re-convert the merged quantity in one shot to avoid float drift
+            const newConverted = convertQuantity(
+              newQty,
+              item.orderedUnit,
+              selectedProduct.base_unit,
+              selectedProduct.dimension
+            );
+            return {
+              ...item,
+              orderedQuantity: newQty,
+              convertedQuantity: newConverted,            // base-unit total
+              itemTotalPrice: newConverted * parseFloat(selectedProduct.base_price),
+            };
+          }
+          return item;
+        })
+      );
     } else {
-      // Add new item
-      setCart([...cart, {
-        productId: selectedProduct.id,
-        productName: selectedProduct.name,
-        orderedQuantity: qty,
-        orderedUnit: calcUnit,
-        convertedQuantity: calcConvertedQty,
-        baseUnit: selectedProduct.base_unit,
-        dimension: selectedProduct.dimension,
-        pricePerBaseUnit: parseFloat(selectedProduct.base_price),
-        itemTotalPrice: calcTotalPrice
-      }]);
+      // ── ADD NEW CART ITEM ──────────────────────────────────────────────────
+      // Store both the user-facing representation and the base-unit values.
+      // The server only needs orderedQuantity + orderedUnit (it re-converts).
+      // convertedQuantity is kept locally for the cumulative stock check above.
+      setCart([
+        ...cart,
+        {
+          productId: selectedProduct.id,
+          productName: selectedProduct.name,
+          orderedQuantity: qty,           // as typed by seller (display)
+          orderedUnit: calcUnit,           // unit seller chose (display)
+          convertedQuantity: calcConvertedQty, // base-unit qty (local stock guard)
+          baseUnit: selectedProduct.base_unit,
+          dimension: selectedProduct.dimension,
+          pricePerBaseUnit: parseFloat(selectedProduct.base_price),
+          itemTotalPrice: calcTotalPrice,  // ₹ total already computed by runLiveConversion
+        },
+      ]);
     }
 
     setSuccess(`Added ${qty} ${calcUnit} of ${selectedProduct.name} to cart.`);
-    setSelectedProduct(null); // Clear active editor
+    setSelectedProduct(null); // Close the calculator panel
     setCalcQty('');
     setCalcUnit('');
   };
