@@ -243,7 +243,7 @@ export default function AdminDashboard() {
       {/* Header */}
       <header className="app-header">
         <div className="logo">
-          <div className="logo-icon">🧪</div>
+          <div className="logo-icon">⚗️</div>
           AasamMedChem <span style={{ fontSize: '0.9rem', color: 'var(--accent-teal)', marginLeft: '0.25rem' }}>Admin Control</span>
         </div>
         <div className="user-badge">
