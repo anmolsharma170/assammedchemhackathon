@@ -60,7 +60,7 @@ export async function verifySession(sessionToken) {
       stringToBuffer(JWT_SECRET),
       { name: 'HMAC', hash: 'SHA-256' },
       false,
-      ['verify']
+      ['sign']
     );
     
     const signatureBuffer = await crypto.subtle.sign(
