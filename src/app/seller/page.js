@@ -491,7 +491,7 @@ export default function SellerDashboard() {
                   </div>
 
                   <div className="cart-total">
-                    <span style={{ fontWeight: '600', color: var(--text-secondary) }}>Estimated Total</span>
+                    <span style={{ fontWeight: '600', color: 'var(--text-secondary)' }}>Estimated Total</span>
                     <span className="data-num currency-inr" style={{ fontSize: '1.35rem', fontWeight: '800', color: '#ffffff' }}>
                       {cartTotal.toFixed(2)}
                     </span>
