@@ -1,36 +1,164 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# AasaMedChem | Inventory & Order Management System
 
-## Getting Started
+A high-precision chemical inventory and quotation/order management workspace built with Next.js, Neon PostgreSQL, and Vanilla CSS. The application features multi-dimension unit conversions, real-time calculation audits, and role-based access control (RBAC).
 
-First, run the development server:
+---
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## 🌟 Project Features
+
+1. **Custom Cookie-Based RBAC**: Direct middleware authentication redirection for **Admin** and **Seller/User** roles.
+2. **Multi-Unit Chemical Conversions**: Supports seamless calculations across multiple units in the same dimension:
+   - **Weight**: grams (`g`) $\leftrightarrow$ kilograms (`kg`)
+   - **Volume**: milliliters (`mL`) $\leftrightarrow$ liters (`L`)
+   - **Count**: items (`items`)
+3. **High-Precision Data Types**: Numeric values (price, inventory, conversions) use PostgreSQL `NUMERIC(20, 8)` for zero-loss float calculations.
+4. **Interactive Quotation Calculator**: Sellers can type in any compatible unit, and the workspace displays a live price conversion audit step-by-step.
+5. **Admin Audit Viewer**: Admins see a detailed "Conversion & Calculation Audit" log for every order item to verify that conversion logic and pricing are correct.
+6. **Automatic Stock Control**: Inventory levels drop automatically upon order placement and restore when an admin rejects a quotation.
+
+---
+
+## 🛠️ Tech Stack & Architecture
+
+- **Frontend**: React 19 (Client Components), Next.js 16 (App Router), Vanilla CSS (Glassmorphic Dark Theme).
+- **Backend**: Next.js Route Handlers (API).
+- **Database**: Neon Serverless PostgreSQL.
+- **Authentication**: Custom signed sessions via standard **Web Crypto API** (HMAC-SHA256), compatible with Next.js Edge Middleware.
+
+```mermaid
+graph TD
+    Client[Next.js Client Components] <-->|JSON API & Cookies| Server[Next.js API Routes]
+    Server <-->|Serverless SQL Query| Neon[Neon Hosted PostgreSQL]
+    Server <-->|Signed Web Crypto Session| Middleware[Next.js Edge Middleware]
+    Middleware -->|Enforces RBAC / Redirects| Client
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+---
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+## 🗄️ Database Schema & Data Types
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+To ensure high decimal precision for micro-weights (milligrams/grams) or high-volume counts without floating-point errors, all measurements, prices, and quantities are stored as `NUMERIC(20, 8)`.
 
-## Learn More
+### 1. `users` Table
+Stores users and their roles (`admin` or `seller`).
+- `id`: `SERIAL PRIMARY KEY`
+- `username`: `VARCHAR(50) UNIQUE`
+- `password_hash`: `VARCHAR(255)`
+- `role`: `VARCHAR(20)` (`admin` or `seller`)
+- `name`: `VARCHAR(100)`
 
-To learn more about Next.js, take a look at the following resources:
+### 2. `products` Table
+Holds chemicals, lab hardware, and inventory settings.
+- `id`: `SERIAL PRIMARY KEY`
+- `name`: `VARCHAR(100)`
+- `sku`: `VARCHAR(50) UNIQUE`
+- `description`: `TEXT`
+- `category`: `VARCHAR(50)`
+- `dimension`: `VARCHAR(20)` (`weight`, `volume`, `count`)
+- `base_unit`: `VARCHAR(10)` (`g`, `kg`, `mL`, `L`, `items`)
+- `base_price`: `NUMERIC(20, 8)` (Price per base_unit in INR)
+- `inventory`: `NUMERIC(20, 8)` (Available stock in terms of base_unit)
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### 3. `orders` Table
+Stores parent quotation logs.
+- `id`: `SERIAL PRIMARY KEY`
+- `seller_id`: `INTEGER` (References `users(id)`)
+- `seller_name`: `VARCHAR(100)`
+- `status`: `VARCHAR(20)` (`pending`, `approved`, `rejected`)
+- `total_price`: `NUMERIC(20, 8)` (Total quotation amount in INR)
+- `created_at`: `TIMESTAMP`
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### 4. `order_items` Table
+Stores items in a quotation, preserving details at order-time alongside audit steps.
+- `id`: `SERIAL PRIMARY KEY`
+- `order_id`: `INTEGER` (References `orders(id)`)
+- `product_id`: `INTEGER` (References `products(id)`)
+- `product_name`: `VARCHAR(100)`
+- `ordered_quantity`: `NUMERIC(20, 8)` (Quantity inputted by Seller)
+- `ordered_unit`: `VARCHAR(10)` (Unit selected by Seller)
+- `converted_quantity`: `NUMERIC(20, 8)` (Quantity converted to product base_unit)
+- `base_unit`: `VARCHAR(10)` (Product base unit)
+- `price_per_base_unit`: `NUMERIC(20, 8)` (Base price per base unit at checkout)
+- `item_total_price`: `NUMERIC(20, 8)` (Preserved total cost: $\text{converted\_quantity} \times \text{price\_per\_base\_unit}$)
 
-## Deploy on Vercel
+---
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## 📈 Unit Conversion Strategy
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### 1. The Conversion Matrix
+Units within the same dimension are mapped in `src/lib/conversions.js`:
+```javascript
+const CONVERSIONS = {
+  weight: {
+    g: { g: 1, kg: 0.001 },
+    kg: { g: 1000, kg: 1 }
+  },
+  volume: {
+    mL: { mL: 1, L: 0.001 },
+    L: { mL: 1000, L: 1 }
+  },
+  count: {
+    items: { items: 1 }
+  }
+};
+```
+
+### 2. Conversions in Action
+- **Interactive Calculator (Frontend)**: As a seller inputs a quantity and selects a unit, the UI looks up the dimension conversion factor, showing a live preview of the converted quantity and computed price in INR.
+- **Stock Check & Reduction (Backend)**: When the quotation is submitted, the backend converts the ordered quantity to the product's configured base unit and checks if that amount is available in stock.
+- **Audit Logging (Database)**: The order items table stores both the seller's original input (`ordered_quantity`, `ordered_unit`) and the converted amount (`converted_quantity`, `base_unit`) so that calculations are 100% auditable.
+
+---
+
+## 🚀 Setup & Installation Instructions
+
+### 1. Clone the workspace and verify dependencies
+Ensure you are in the workspace root. Run:
+```bash
+npm install
+```
+
+### 2. Set Up Environment Variables
+Create a `.env.local` file in the project root:
+```env
+# Neon Connection String
+DATABASE_URL="postgresql://username:password@ep-something.us-east-2.aws.neon.tech/neondb?sslmode=require"
+
+# Secret Key for JWT session signing (can be anything)
+JWT_SECRET="your-secret-key-here"
+```
+
+### 3. Initialize & Seed Neon Database
+We have provided a database initialization script. Run:
+```bash
+npm run db:setup
+```
+This script will construct the tables, establish foreign key constraints, and seed initial demo accounts and chemicals.
+
+### 4. Run Development Server
+```bash
+npm run dev
+```
+Open [http://localhost:3000](http://localhost:3000) in your browser.
+
+---
+
+## 🔐 Demo Accounts / Test Credentials
+
+- **Admin Account**:
+  - **Username**: `admin`
+  - **Password**: `adminpassword`
+- **Seller Account**:
+  - **Username**: `seller`
+  - **Password**: `sellerpassword`
+
+---
+
+## ☁️ Deployment on Vercel
+
+1. Push this repository to GitHub.
+2. Link your GitHub repository in your Vercel Dashboard.
+3. Configure the environment variables in Vercel:
+   - `DATABASE_URL`: Add your Neon connection string.
+   - `JWT_SECRET`: Add a secure signing key.
+4. Click **Deploy**. Vercel will build the application.
