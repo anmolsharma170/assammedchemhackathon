@@ -21,8 +21,15 @@ async function migrate() {
     const migrationPath = path.resolve(__dirname, '001_init.sql');
     const sqlText = fs.readFileSync(migrationPath, 'utf8');
 
-    console.log("Executing 001_init.sql...");
-    await sql(sqlText);
+    console.log("Executing 001_init.sql statements sequentially...");
+    const statements = sqlText
+      .split(';')
+      .map(q => q.trim())
+      .filter(q => q.length > 0);
+
+    for (let i = 0; i < statements.length; i++) {
+      await sql.query(statements[i]);
+    }
 
     console.log("Database migrations completed successfully!");
   } catch (error) {

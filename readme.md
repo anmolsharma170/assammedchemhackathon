@@ -20,17 +20,28 @@ A high-precision chemical inventory and quotation/order management workspace bui
 
 ## 🛠️ Tech Stack & Architecture
 
-- **Frontend**: React 19 (Client Components), Next.js 16 (App Router), Vanilla CSS (Glassmorphic Dark Theme).
-- **Backend**: Next.js Route Handlers (API).
+- **Frontend**: React 19 (Client Components), Next.js 16 (App Router), Vanilla CSS (Clean Light-Themed Enterprise UI).
+- **Backend**: Next.js App Router API Routes.
 - **Database**: Neon Serverless PostgreSQL.
 - **Authentication**: Custom signed sessions via standard **Web Crypto API** (HMAC-SHA256), compatible with Next.js Edge Middleware.
 
+### Strict N-Tier (MVC) Architecture
+The project is built on a clean, scalable N-Tier Architecture with clear separation of concerns:
+1. **Presentation / Routing Layer**: Next.js client pages (JSX) and route endpoints (`src/app/api/...`) that only handle network routing and delegate to Controllers.
+2. **Controller Layer**: Handles HTTP input mapping, request payload validation, and packages outcomes into NextResponse JSON models (`src/controllers/...`).
+3. **Service Layer**: Implements core business logic, conversions, calculations, validations, and manages operations across repositories (`src/services/...`).
+4. **Repository Layer (DAL)**: The **ONLY** location containing database SQL client queries (`src/repositories/...`).
+5. **Model Layer**: Defines validation constraints and domain models (`src/models/...`).
+6. **Middleware Layer**: Modular Edge RBAC middleware controls (`src/middlewares/...`).
+
 ```mermaid
 graph TD
-    Client[Next.js Client Components] <-->|JSON API & Cookies| Server[Next.js API Routes]
-    Server <-->|Serverless SQL Query| Neon[Neon Hosted PostgreSQL]
-    Server <-->|Signed Web Crypto Session| Middleware[Next.js Edge Middleware]
-    Middleware -->|Enforces RBAC / Redirects| Client
+    UI[Client Presentation Layer] <-->|JSON API| Router[App Router Endpoints]
+    Router <--> Controller[Controller Layer]
+    Controller <--> Service[Service Layer]
+    Service <--> Repository[Repository Layer]
+    Repository <--> Neon[Neon PostgreSQL Client]
+    Router -.->|Session Token| Middleware[Edge RBAC Middleware]
 ```
 
 ---
@@ -151,6 +162,9 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 - **Seller Account**:
   - **Username**: `seller`
   - **Password**: `sellerpassword`
+- **Customer Account**:
+  - **Username**: `customer`
+  - **Password**: `customerpassword`
 
 ---
 

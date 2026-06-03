@@ -7,7 +7,35 @@ export class OrderService {
    * Retrieves orders via OrderRepository.
    */
   static async getOrders(userId = null, role = 'admin') {
-    return await OrderRepository.findAllWithItems(userId, role);
+    const rows = await OrderRepository.findAllWithItems(userId, role);
+    
+    const ordersMap = {};
+    for (const row of rows) {
+      if (!ordersMap[row.order_id]) {
+        ordersMap[row.order_id] = {
+          id: row.order_id,
+          sellerId: row.seller_id,
+          sellerName: row.seller_name,
+          status: row.status,
+          totalPrice: parseFloat(row.total_price),
+          createdAt: row.created_at,
+          items: []
+        };
+      }
+      ordersMap[row.order_id].items.push({
+        id: row.item_id,
+        productId: row.product_id,
+        productName: row.product_name,
+        orderedQuantity: parseFloat(row.ordered_quantity),
+        orderedUnit: row.ordered_unit,
+        convertedQuantity: parseFloat(row.converted_quantity),
+        baseUnit: row.base_unit,
+        pricePerBaseUnit: parseFloat(row.price_per_base_unit),
+        itemTotalPrice: parseFloat(row.item_total_price)
+      });
+    }
+
+    return Object.values(ordersMap).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
   }
 
   /**

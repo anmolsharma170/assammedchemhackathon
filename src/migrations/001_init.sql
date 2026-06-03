@@ -56,9 +56,9 @@ CREATE TABLE order_items (
 -- Passwords: adminpassword, sellerpassword, customerpassword
 -- We seed the pre-computed bcrypt hashes of the passwords for fast startup.
 INSERT INTO users (username, password_hash, role, name) VALUES
-('admin', '$2a$10$Y14U09r1h.rI.8qYj9g07Ob4k5eK8yQ2B0T.wG8f/wQv5c19xVn/G', 'admin', 'System Administrator'),
-('seller', '$2a$10$Z/V53bY9F2l95f0S4n/UGe12p4P5zQ/r1T8uE1Gv4f/wQv5c19xVn/G', 'seller', 'Lead Lab Seller'),
-('customer', '$2a$10$X/X53bY9F2l95f0S4n/UGe12p4P5zQ/r1T8uE1Gv4f/wQv5c19xVn/G', 'user', 'Standard Lab Customer');
+('admin', '$2b$10$ca0tBMMwkrb2kpmIRpqtT.QsM3sJL9n.enrTGK5LkHKkOoYZhpOdW', 'admin', 'System Administrator'),
+('seller', '$2b$10$gDHNAmGsqh5QQvsvWEPHVOiqHct3e28GRygkVj7b0sv9z0ZPpSRf2', 'seller', 'Lead Lab Seller'),
+('customer', '$2b$10$YZbGB/YmzhEZlGzfJEgP7.S0TfPF.MxcFx1uuGm.Pv6GxhjlY43Ce', 'user', 'Standard Lab Customer');
 
 -- 7. Seed Products
 INSERT INTO products (name, sku, description, category, dimension, base_unit, base_price, inventory) VALUES
