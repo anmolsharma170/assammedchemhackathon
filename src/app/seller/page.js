@@ -281,6 +281,11 @@ export default function SellerDashboard() {
 
       {/* Main Workspace */}
       <main className="app-container">
+        {/* Seller Workspace Guide */}
+        <div style={{ padding: '1rem', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '8px', marginBottom: '1.5rem', color: '#1e3a8a', fontSize: '0.9rem', lineHeight: '1.5' }}>
+          💡 <strong>Seller Workspace</strong>: Select a chemical from the catalog below and click <strong>Add to Quote</strong>. 
+          Use the calculator sidebar to input your quantity in any compatible unit (e.g. grams vs kilograms) to preview the live price conversion and add it to your quotation cart.
+        </div>
         
         {/* Flash Messages */}
         {error && (

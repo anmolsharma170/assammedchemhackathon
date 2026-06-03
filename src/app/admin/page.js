@@ -261,6 +261,13 @@ export default function AdminDashboard() {
 
       {/* Main Workspace */}
       <main className="app-container">
+        {/* Admin Workspace Guide */}
+        <div style={{ padding: '1rem', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '8px', marginBottom: '1.5rem', color: '#1e3a8a', fontSize: '0.9rem', lineHeight: '1.5' }}>
+          💡 <strong>Administrator Workspace</strong>: Manage the chemical and equipment catalog (create products, update base prices, adjust inventory) and process incoming quotations. 
+          <span style={{ display: 'block', marginTop: '0.25rem', fontWeight: '600' }}>
+            * Operational Note: Rejecting a quotation automatically returns the reserved quantities back into active catalog stock.
+          </span>
+        </div>
         {/* Flash Messages */}
         {error && (
           <div className="alert-toast alert-error" style={{ marginBottom: '1.5rem' }}>

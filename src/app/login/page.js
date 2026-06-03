@@ -53,6 +53,14 @@ export default function LoginPage() {
           </div>
           <h1>AasaMedChem</h1>
           <p className="login-subtitle">Inventory & Quotation Workspace</p>
+          
+          <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '0.85rem', textAlign: 'left', lineHeight: '1.4', padding: '0.75rem', background: '#f9fafb', borderRadius: '6px', border: '1px solid var(--border-muted)' }}>
+            <strong>Welcome!</strong> This workspace demonstrates high-precision chemical inventory management with multi-unit conversions. 
+            <div style={{ marginTop: '0.4rem' }}>
+              • <strong>Admin</strong> has catalog CRUD privileges & approves/rejects quotations. <br />
+              • <strong>Seller</strong> browses products & creates quotes in custom units (e.g., ordering in <code>g</code> for items stored in <code>kg</code>).
+            </div>
+          </div>
         </div>
 
         {error && (
@@ -100,7 +108,7 @@ export default function LoginPage() {
         </form>
 
         <div className="credentials-tips">
-          <p style={{ fontWeight: '600', marginBottom: '0.5rem', color: '#ffffff' }}>Demo Accounts:</p>
+          <p style={{ fontWeight: '600', marginBottom: '0.5rem', color: 'var(--text-primary)' }}>Demo Accounts:</p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
             <div>
               <span className="role-pill admin" style={{ fontSize: '0.65rem', padding: '0.1rem 0.4rem', marginRight: '0.5rem' }}>Admin</span>
