@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import { sql } from '@/lib/db';
 import { verifySession } from '@/lib/auth-crypto';
+import { ProductService } from '@/services/productService';
 
 // GET: List all products with search & filter
 export async function GET(request) {
@@ -17,22 +17,7 @@ export async function GET(request) {
   const category = searchParams.get('category') || '';
   
   try {
-    let products;
-    if (category && category !== 'All') {
-      products = await sql`
-        SELECT * FROM products 
-        WHERE (name ILIKE ${'%' + query + '%'} OR sku ILIKE ${'%' + query + '%'})
-          AND category = ${category}
-        ORDER BY name ASC
-      `;
-    } else {
-      products = await sql`
-        SELECT * FROM products 
-        WHERE name ILIKE ${'%' + query + '%'} OR sku ILIKE ${'%' + query + '%'}
-        ORDER BY name ASC
-      `;
-    }
-
+    const products = await ProductService.getProducts(query, category);
     return NextResponse.json({ products }, { status: 200 });
   } catch (error) {
     console.error("GET products error:", error);
@@ -70,7 +55,7 @@ export async function POST(request) {
       }, { status: 400 });
     }
 
-    // Validate numeric parsing
+    // Validate numeric values
     const numericPrice = parseFloat(base_price);
     const numericInventory = parseFloat(inventory);
 
@@ -81,20 +66,25 @@ export async function POST(request) {
       return NextResponse.json({ error: "Inventory must be a valid non-negative number" }, { status: 400 });
     }
 
-    // Check SKU uniqueness
-    const existing = await sql`SELECT id FROM products WHERE sku = ${sku}`;
-    if (existing.length > 0) {
+    // Check SKU uniqueness via service
+    const exists = await ProductService.checkSkuExists(sku);
+    if (exists) {
       return NextResponse.json({ error: "Product with this SKU already exists" }, { status: 400 });
     }
 
-    // Insert product
-    const result = await sql`
-      INSERT INTO products (name, sku, description, category, dimension, base_unit, base_price, inventory)
-      VALUES (${name}, ${sku}, ${description || null}, ${category || 'General'}, ${dimension}, ${base_unit}, ${numericPrice}, ${numericInventory})
-      RETURNING *
-    `;
+    // Insert product via service
+    const product = await ProductService.createProduct({
+      name,
+      sku,
+      description,
+      category,
+      dimension,
+      base_unit,
+      base_price: numericPrice,
+      inventory: numericInventory
+    });
 
-    return NextResponse.json({ success: true, product: result[0] }, { status: 201 });
+    return NextResponse.json({ success: true, product }, { status: 201 });
   } catch (error) {
     console.error("POST product error:", error);
     return NextResponse.json({ error: "Failed to create product" }, { status: 500 });

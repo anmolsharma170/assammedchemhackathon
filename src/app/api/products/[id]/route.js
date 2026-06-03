@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import { sql } from '@/lib/db';
 import { verifySession } from '@/lib/auth-crypto';
+import { ProductService } from '@/services/productService';
 
 // PUT: Admin updates a product
 export async function PUT(request, { params }) {
@@ -45,32 +45,28 @@ export async function PUT(request, { params }) {
     }
 
     // Check SKU uniqueness excluding current product
-    const existing = await sql`SELECT id FROM products WHERE sku = ${sku} AND id <> ${id}`;
-    if (existing.length > 0) {
+    const exists = await ProductService.checkSkuExists(sku, id);
+    if (exists) {
       return NextResponse.json({ error: "Product with this SKU already exists" }, { status: 400 });
     }
 
-    // Update product
-    const result = await sql`
-      UPDATE products
-      SET name = ${name},
-          sku = ${sku},
-          description = ${description || null},
-          category = ${category || 'General'},
-          dimension = ${dimension},
-          base_unit = ${base_unit},
-          base_price = ${numericPrice},
-          inventory = ${numericInventory},
-          updated_at = CURRENT_TIMESTAMP
-      WHERE id = ${id}
-      RETURNING *
-    `;
+    // Update product via service
+    const product = await ProductService.updateProduct(id, {
+      name,
+      sku,
+      description,
+      category,
+      dimension,
+      base_unit,
+      base_price: numericPrice,
+      inventory: numericInventory
+    });
 
-    if (result.length === 0) {
+    if (!product) {
       return NextResponse.json({ error: "Product not found" }, { status: 404 });
     }
 
-    return NextResponse.json({ success: true, product: result[0] }, { status: 200 });
+    return NextResponse.json({ success: true, product }, { status: 200 });
   } catch (error) {
     console.error("PUT product error:", error);
     return NextResponse.json({ error: "Failed to update product" }, { status: 500 });
@@ -90,11 +86,8 @@ export async function DELETE(request, { params }) {
   const { id } = await params;
 
   try {
-    const result = await sql`
-      DELETE FROM products WHERE id = ${id} RETURNING id
-    `;
-
-    if (result.length === 0) {
+    const deleted = await ProductService.deleteProduct(id);
+    if (!deleted) {
       return NextResponse.json({ error: "Product not found" }, { status: 404 });
     }
 
