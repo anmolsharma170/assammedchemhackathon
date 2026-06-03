@@ -1,24 +1,22 @@
-import { sql } from '@/lib/db';
-import bcrypt from 'bcryptjs';
+import { UserRepository } from '@/repositories/UserRepository';
 import { signSession } from '@/lib/auth-crypto';
+import bcrypt from 'bcryptjs';
 
 export class AuthService {
   /**
-   * Retrieves active profile from user ID.
+   * Retrieves active profile from user ID via Repository.
    */
   static async verifySessionUser(userId) {
-    const users = await sql`SELECT id, username, role, name FROM users WHERE id = ${userId}`;
-    return users.length > 0 ? users[0] : null;
+    return await UserRepository.findById(userId);
   }
 
   /**
    * Validates user credentials. Returns profile if correct, null otherwise.
    */
   static async authenticateUser(username, password) {
-    const users = await sql`SELECT * FROM users WHERE username = ${username}`;
-    if (users.length === 0) return null;
+    const user = await UserRepository.findByUsername(username);
+    if (!user) return null;
 
-    const user = users[0];
     const isPasswordValid = await bcrypt.compare(password, user.password_hash);
     if (!isPasswordValid) return null;
 
